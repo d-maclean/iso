@@ -98,5 +98,5 @@ BC_tables.o: $(SRC_DIR)/BC_tables.f90
 	$(FC) $(OMP) $(FFLAGS) $(INCLUDE) -c $<
 
 clean:
-	rm -f $(ISO_DIR)/$(EEP) $(ISO_DIR)/$(ISO) $(ISO_DIR)/$(BLEND) $(ISO_DIR)/$(TRK) $(ISO_DIR)/$(INTMET) $(ISO_DIR)/$(INTAGE) $(ISO_DIR)/$(CMD)
+	rm -f $(ISO_DIR)/$(EEP) $(ISO_DIR)/$(ISO) $(ISO_DIR)/$(BLEND) $(ISO_DIR)/$(TRK) $(ISO_DIR)/$(INTMET) $(ISO_DIR)/$(INTAGE) $(ISO_DIR)/$(CMD) $(ISO_DIR)/$(INTEEP) $(ISO_DIR)/$(CHA) $(ISO_DIR)/$(EEP_CMD)
 	rm -f *.mod *.o
