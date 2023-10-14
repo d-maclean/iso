@@ -55,13 +55,13 @@ output_to_eep_dir = .false.
 
    !if making isochrones repeatedly from the same set of tracks, set to true
    !this creates a binary track file that is read in much faster than text
-   make_bin_tracks = .true.
+   make_bin_tracks = .false.
 
    !include FSPS phases in EEPs and isochrones
    do_phases = .true.
 
    !set the WDCS primary EEP if center_gamma < center_gamma_limit
-   center_gamma_limit = 19
+   center_gamma_limit = 9 !was 19
 
    !set the CarbonBurn primary EEP if center_c12 < center_carbon_limit
    center_carbon_limit = 0.05
@@ -90,5 +90,9 @@ output_to_eep_dir = .false.
    age_scale = 1d0
    Teff_scale = 2.0d0
    logL_scale = 0.125d0
+
+   append_eep=.false.
+   !Fe_div_H = 0
+
 
 / !end of eep_controls

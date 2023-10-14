@@ -63,7 +63,7 @@ program make_track
   do i=1,num_tracks_s
      call read_eep(s(i))
      if(debug) write(*,'(a50,f8.2,99i8)') trim(s(i)% filename), s(i)% initial_mass, s(i)% eep
-  enddo
+  end do
 
   do i=1,num_tracks_t
      call interpolate_mass(s,t(i),ierr)
@@ -79,7 +79,7 @@ program make_track
         t(i)% cmd_suffix = cmd_suffix
         call write_track_cmd_to_file(t(i))
      endif
-  enddo
+  end do
 
 contains
 
@@ -101,7 +101,7 @@ contains
 
     open(unit=io,file=trim(input_file),status='old',action='read',iostat=ierr)
     if(ierr/=0) then
-       write(0,*) ' make_track: problem reading ', trim(input_file)
+       write(0,*) ' make_track: problem reading 1 ', trim(input_file)
        return
     endif
     read(io,*) !skip comment
@@ -123,7 +123,7 @@ contains
 
     open(unit=io,file=trim(eep_file),status='old',action='read',iostat=ierr)
     if(ierr/=0) then
-       write(0,*) ' make_track: problem reading ', trim(eep_file)
+       write(0,*) ' make_track: problem reading 2 :', trim(eep_file)
        return
     endif
     read(io,*) !skip
@@ -143,7 +143,7 @@ contains
     do i=1,num_tracks_s
        read(io,'(a)',iostat=ierr) s(i)% filename
        if(ierr/=0) exit
-    enddo
+    end do
     close(io)
 
     call free_iounit(io)

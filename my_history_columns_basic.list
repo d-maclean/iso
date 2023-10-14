@@ -8,35 +8,47 @@
    
       he_core_mass ! h1 boundary is outermost location where h1 mass fraction is < 1e-4
       c_core_mass ! he4 boundary is outermost location where h1 mass fraction is < 1e-4
-         
+      o_core_mass ! c12 boundary is outermost location where h1 mass fraction is < 1e-4
+      he_core_radius
+      c_core_radius
+      
    ! conditions near surface
    
       log_L ! log10 luminosity in Lsun units
-      log_LH ! log10 power_h_burn
-      log_LHe ! log10 power_he_burn
       log_Teff ! log10 effective temperature
       log_R ! log10 radius in Rsun units
+      log_LH ! log10 power_h_burn
+      log_LHe ! log10 power_he_burn
       log_g ! log10 gravity
-	 
+      
    ! mass fractions near surface (averaged over the outer 1e−6% of the total stellar mass)
    
       surface h1
-	  surface he3
+      !surface he3
       surface he4
       surface c12
       surface o16
-	 
+      
    ! conditions near center
 
       log_center_T ! temperature
       log_center_Rho ! density
+      center_degeneracy ! the electron chemical potential in units of k*T
+      center_omega ! angular frequency of rotation
       center_gamma ! plasma interaction parameter
+      mass_conv_core ! mass of the convective core
         
    ! mass fractions near center (averaged over the inner 1e−6% of the total stellar mass)
    
       center h1
       center he4
-      center c12 
-
-
-
+      center c12
+      center o16
+      
+    moment_of_inertia
+    mass_conv_envelope
+    rad_conv_envelope
+    envelope_binding_energy
+    !dynamic_timescale
+    !kh_timescale
+    !mdot_timescale

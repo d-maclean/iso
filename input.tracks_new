@@ -1,5 +1,5 @@
 #new [Fe/H]
-0.0000000000001
+0.0000001
 #number of new tracks to interpolate
 3
 #masses and output filenames 

@@ -1,23 +1,50 @@
 #version string, max 8 characters
-example
-#initial Y, initial Z, [Fe/H], [alpha/Fe], v/vcrit (space separated)
-   0.2703 1.42857e-02   0.00        0.00     0.4
+1.0
+#initial Y, initial Z, [Fe/H],  [alpha/Fe],   v/vcrit (space separated)
+0.2869  0.0142857     0.00     0.00     0.00
 #data directories: 1) history files, 2) eeps, 3) isochrones
-data/tracks
-data/eeps
-data/isochrones
+/fred/oz003/poojan/iso/data/Zsun_ovs0p11_low2/tracks/
+/fred/oz003/poojan/iso/data/Zsun_ovs0p11_low2/eeps/
+/fred/oz003/poojan/mesa/iso/data/isochrones
 #read history_columns
-my_history_columns_basic.list
+my_history_columns.list
 #specify tracks
-4
-00008M.track
-00100M.track
-01000M.track
-10000M.track
-#specify isochrones
+7
+00219_history.data
+00259_history.data
+00299_history.data
+00339_history.data
+00379_history.data
+00419_history.data
+00459_history.data
+12
+00900_history.data
+01300_history.data
+01100_history.data
+01500_history.data
+02000_history.data
+02500_history.data
+03000_history.data
+03500_history.data
+04000_history.data
+04500_history.data
+05000_history.data
+05500_history.data
+10
+01000_history.data
+01500_history.data
+02000_history.data
+02500_history.data
+03000_history.data
+03500_history.data
+04000_history.data
+04500_history.data
+05000_history.data
+06000_history.data
 isochrones_example.txt
 min_max
 log10
 51
 5.0
 10.0
+/fred/oz003/poojan/mesa/test2/LOGS

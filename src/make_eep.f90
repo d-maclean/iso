@@ -37,7 +37,7 @@ program make_eeps
   do i=1,num
      call alloc_track(history_files(i),t)
      call read_history_file(t,ierr)
-     write(*,*) trim(t% filename), t% neep, t% MESA_revision_number
+     write(*,*) trim(t% filename), t% neep, t% MESA_revision_number,t% ntrack
      !now set header info
      t% initial_Y = initial_Y
      t% initial_Z = initial_Z
@@ -45,18 +45,29 @@ program make_eeps
      t% alpha_div_Fe = alpha_div_Fe
      t% v_div_vcrit = v_div_vcrit
      t% version_string = version_string
+     !write(*,*) initial_Y,initial_Z,Fe_div_H,alpha_div_Fe,v_div_vcrit,version_string
      if(ierr/=0) then
         write(0,*) 'make_eep: problem reading!'
         cycle
      endif
      call primary_eep(t)
      write(*,'(99i8)') t% eep
+
      if( all(t% eep == 0) ) then
         write(*,*) ' PROBLEM WITH TRACK: NO EEPS DEFINED '
      else
         call alloc_track(t% filename,s)
         call secondary_eep(t,s)
-        if(do_phases) call set_track_phase(s)
+        print*, 'before',s% eep
+        call check_for_bgb(s)
+        print*, 'after',s% eep
+        if(do_phases) then
+            if (s% has_BGB) then
+                call set_track_phase_BGB(s)
+            else
+                call set_track_phase(s)
+            endif
+        endif
         s% filename = trim(eep_dir) // '/' // trim(s% filename) // '.eep'
         call write_track(s)
         deallocate(s)

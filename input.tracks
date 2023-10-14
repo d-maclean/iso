@@ -1,8 +1,6 @@
 #new [Fe/H]
-input.v029p00
+./input.example
 #number of new tracks to interpolate
-3
+1
 #masses and output filenames 
-1.001 /data/junk/test_b_1001.eep
-3.003 /data/junk/test_b_3003.eep
-5.005 /data/junk/test_b_5005.eep
+76.127089 /Users/pagrawal/iso/data/test/07612M.track.eep

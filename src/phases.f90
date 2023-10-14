@@ -97,4 +97,55 @@ contains
 
   end subroutine set_track_phase
 
+subroutine set_track_phase_BGB(t)
+    type(track), intent(inout) :: t
+    integer :: i, i_p, j, n, next_eep
+    real(dp) :: phase
+
+    n = t% ntrack
+
+    allocate(t% phase(n))
+
+    t% phase = undefined
+
+    do i=1,n
+       next_eep = 0
+       do j=1,primary-1
+          next_eep = next_eep + 1 + eep_interval(j)
+          if (i <= next_eep) exit
+       enddo
+
+       i_p = j !set i_p to nearest primary EEP <= i
+
+       select case(i_p)
+       case(1)
+          phase = pre_MS
+       case(2:3)
+          phase = MS
+       case(4)
+          phase = SGB
+        case(5)
+        phase = RGB
+       case(6:7)
+          phase = red_HB_clump
+       case(8)
+          phase = early_AGB
+       case(9)
+          phase = TP_AGB
+       case(10:11)
+          phase = post_AGB
+       case default
+          phase = undefined
+       end select
+
+       if(t% tr(i_logTe,i) >= 4d0 .and. t% tr(i_surfH,i) <= 3d-1 .and. &
+            t% star_type == star_high_mass) phase = Wolf_Rayet
+
+       t% phase(i) = phase
+    enddo
+
+    t% has_phase = .true.
+
+  end subroutine set_track_phase_BGB
+
 end module phases

@@ -61,7 +61,7 @@ module iso_eep_support
   real(dp) :: Tc_scale=1d0
 
   !for columns
-  integer, parameter :: max_col = 180
+  integer, parameter :: max_col = 220
   integer :: ncol
   integer, parameter :: column_int=0
   integer, parameter :: column_dbl=1
@@ -83,6 +83,7 @@ module iso_eep_support
      character(len=8) :: version_string
      type(column), allocatable :: cols(:)
      logical :: has_phase = .false., ignore=.false.
+     logical :: has_BGB=.false.
      integer :: ncol, ntrack, neep, MESA_revision_number
      integer :: star_type = unknown
      integer :: nfil !number of filters
@@ -144,7 +145,7 @@ contains
     integer, intent(out) :: ierr
     integer :: i, io, ncols(2), nchar, column_length, pass
     character(len=file_path) :: line, column_name
-    logical :: is_int
+    logical :: is_int,verbose
     ierr=0
     io=alloc_iounit(ierr)
     open(io,file=trim(history_columns_list),action='read',status='old',iostat=ierr)
@@ -469,7 +470,7 @@ contains
     if(present(append_eep))then
        do_append_eep = append_eep
     else
-       do_append_eep = .true.
+       do_append_eep = .false.
     endif
 
     if(use_full_path)then
@@ -879,7 +880,7 @@ contains
     have_col = .false.
     allocate(output(ncol))
     output = 0
-    if (verbose) write(*,*) 'number of columns: ', ncol
+    if (verbose) write(*,*) 'number of columns: ', ncol,max_col
     do j=1,ncol
        iloop: do i=1,max_col
           ilo =   1 + main*(i-1) + xtra*(i-1)
