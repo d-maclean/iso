@@ -1,4 +1,8 @@
-ISO_DIR = /Users/poojan/iso
+#check ISO_DIR is set
+ifndef ISO_DIR
+  $(error ISO_DIR enviroment variable is not set)
+endif
+
 
 #MESASDK_ROOT=/Applications/mesasdk
 #source $MESASDK_ROOT/bin/mesasdk_init.sh
