@@ -8,7 +8,7 @@ module eep
 
   implicit none
 
-  logical, parameter :: eep_verbose = .false.
+  logical, parameter :: eep_verbose = .true.
 
 contains
 
@@ -20,18 +20,20 @@ contains
     type(track), intent(out) :: s
     integer :: i, j, k, num_p, num_s
 
-    s% version_string = t% version_string
-    s% initial_Y = t% initial_Y
+!    s% version_string = t% version_string
+!    s% initial_Y = t% initial_Y
     s% initial_Z = t% initial_Z
-    s% Fe_div_H  = t% Fe_div_H
-    s% alpha_div_Fe = t% alpha_div_Fe
-    s% v_div_vcrit = t% v_div_vcrit
+!    s% Fe_div_H  = t% Fe_div_H
+!    s% alpha_div_Fe = t% alpha_div_Fe
+!    s% v_div_vcrit = t% v_div_vcrit
     s% ncol = t% ncol
     s% star_type = t% star_type
+
+
     !determine total number of EEPs in this track
     num_p = 0
     num_s = 0
-    do j=1,primary
+    do j=1,t% neep
        if(t% eep(j) > 0) then
           num_p = num_p + 1
           if(j > 1) then
@@ -43,13 +45,15 @@ contains
     ! identify the attributes of the new EEP track
     s% filename = t% filename
     s% initial_mass = t% initial_mass
-    s% MESA_revision_number = t% MESA_revision_number
+!    s% MESA_revision_number = t% MESA_revision_number
     s% ntrack = num_p + num_s
     s% neep = num_p
     s% ncol = t% ncol
     allocate(s% cols(s% ncol))
     s% cols = t% cols
 
+
+!    print*, "sec eep", s% ntrack, s% neep, num_p , num_s
     ! allocate and fill new track
     allocate(s% tr(s% ncol,s% ntrack))
     allocate(s% dist(s% ntrack))
@@ -60,7 +64,7 @@ contains
     k = 1
     ! fill with primary and secondary EEPs
     do j=1,num_p
-       if(eep_verbose .and. t% eep(j) > 0) write(*,*) t% tr(i_age,t% eep(j))
+       if(eep_verbose .and. t% eep(j) > 0) write(*,*) 'age', t% tr(i_age,t% eep(j))
        s% tr(:,k) = t% tr(:,t% eep(j))
        s% dist(k) = t% dist(t% eep(j))
        s% eep(j) = k
@@ -68,6 +72,7 @@ contains
        if(j < num_p) call eep_interpolate(t,j,k,s)
        if(j<num_p) k = k + eep_interval(j) + 1
     enddo
+    if(eep_verbose) write(*,*) s% eep
   end subroutine secondary_eep
 
   subroutine eep_interpolate(t,j,k,s)
@@ -86,12 +91,13 @@ contains
     logical, parameter :: linear = .true.
 
     if(t% eep(j) == t% eep(j+1)) return
+!    print*,'eep interpolate', t% eep(j+1), t% ntrack, size(t% dist)
 
+    
     num_eep = eep_interval(j)
-
     ! determine distance between primary eeps
     dist = t% dist(t% eep(j+1)) - t% dist(t% eep(j))
-
+    
     ! interval = (total distance) / (number of secondary eeps)
     delta = dist / real(num_eep+1,kind=dp)
 
@@ -127,6 +133,127 @@ contains
   end subroutine eep_interpolate
 
 
+subroutine primary_eep_pols(t)
+type(track), intent(inout) :: t
+integer:: i,n,j,l, eep(10),k
+character:: m
+t% EEP = 0 !initialize
+eep=0
+n=0;j=0;l=0
+do i = 1, t% ntrack
+    m = t% model(i)
+    if(m=='A')then
+        eep(1) = i
+    elseif(m=='B')then
+        eep(2) = i
+    elseif(m=='C')then
+    eep(3) = i
+
+    elseif(m=='E')then
+    eep(4) = i
+    elseif(m=='H')then
+    eep(5) = i
+    elseif(m=='L')then
+    l = i
+    elseif(m=='N')then
+    n = i
+    elseif(m=='J')then
+    j = i
+    elseif(m=='P')then
+    eep(7) = i
+    elseif(m=='V')then
+    eep(8) = i
+    elseif(m=='W')then
+    eep(9) = i
+    endif
+
+end do
+
+!added n>0 after last error
+
+if (l == 0 .and. n>0) l = eep(3)+ceiling(0.9*(n-eep(3)))
+!if (l == 0) l = eep(3)+ceiling(0.9*(n-eep(3)))
+
+if (eep(2) == 0) eep(2) = floor(0.75*(eep(3)-eep(1)))         !B=C-1
+                 !L=N-1
+
+if (eep(5) /= 0 ) then            !if located H
+        eep(6) =l
+    else
+        if (j/=0) then              !if located J
+            eep(6) = j
+            eep(5) = eep(6)-1
+        else
+            eep(6) =l
+            eep(5) = eep(6)-1
+        endif
+    endif
+
+if (eep(4)==eep(5)) then
+eep(6) =l
+eep(5) = eep(6)-1
+endif
+
+!eep_interval = 50
+if (eep(4) == 0) then
+eep_interval(3)=176
+eep_interval(4)=75
+eep_interval(5)=100
+endif
+if (eep(8) /= 0) then
+t% star_type = star_low_mass
+else
+t% star_type = star_high_mass
+endif
+
+if (eep(7) == 0) t% star_type = star_low_mass
+
+if (t% model(t% ntrack)=='X') eep(10) = t% ntrack
+
+k=1
+do i= 1, 10
+if (eep(i)>0)then
+t% eep(k) = eep(i)
+k=k+1
+endif
+end do
+print*,"EEPs in primary_eep_pols ",EEP
+end subroutine primary_eep_pols
+
+subroutine primary_eep_sse(t,eep)
+type(track), intent(inout) :: t
+integer:: i,n,j,l, eep(10),k
+character:: m
+
+!it doesn't gets used, eeps are assigned while reading files
+t% EEP = 0 !initialize
+!eep=0
+
+
+!eep_interval = 50
+!if (eep(4) == 0) then
+!eep_interval(3)=176
+!eep_interval(4)=75
+!eep_interval(5)=100
+!endif
+
+if (eep(8) /= 0) then
+t% star_type = star_low_mass
+else
+t% star_type = star_high_mass
+endif
+
+k=1
+do i= 1, 10
+if (eep(i)>0)then
+t% eep(k) = eep(i)
+k=k+1
+endif
+end do
+print*,"EEPs in primary_eep_sse ",EEP
+end subroutine primary_eep_sse
+
+
   subroutine primary_eep(t)
     ! sets the locations of the primary EEPs in a track read from a history data file
     type(track), intent(inout) :: t
@@ -134,7 +261,7 @@ contains
     t% EEP = 0 !initialize
     ieep=1
     inc=2
-    t% EEP(ieep) = PreMS_Tc(t,5.0d0,1); if(check(t,ieep)) return; ieep=ieep+1
+    !t% EEP(ieep) = PreMS_Tc(t,5.0d0,1); if(check(t,ieep)) return; ieep=ieep+1
     t% EEP(ieep) = ZAMS(t,10); if(check(t,ieep)) return; ieep=ieep+1
     t% EEP(ieep) = TAMS(t,3.5d-1,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
     t% EEP(ieep) = TAMS(t,1d-12,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
@@ -222,6 +349,7 @@ contains
     integer, intent(in) :: guess
     integer :: i, my_guess, ZAMS1, ZAMS2, ZAMS3
 
+    !if eep(1)>0 ZAMS =eep(1)
     ZAMS = 0
     Xmax = t% tr(i_Xc,1)
     Xmin = Xmax - 1.0d-3
@@ -242,22 +370,22 @@ contains
     ZAMS1 = i
 
     !test of L_H/L_tot > some fraction
-    LH = pow10(t% tr(i_logLH,i))
-    Lmin = Lfac * pow10(t% tr(i_logL,i))
-    do while(LH > Lmin)
-       i = i-1
-       LH = pow10(t% tr(i_logLH,i))
-       Lmin = Lfac * pow10(t% tr(i_logL,i))
-    enddo
+    !LH = pow10(t% tr(i_logLH,i))
+    !Lmin = Lfac * pow10(t% tr(i_logL,i))
+    !do while(LH > Lmin)
+       !i = i-1
+       !LH = pow10(t% tr(i_logLH,i))
+       !Lmin = Lfac * pow10(t% tr(i_logL,i))
+    !enddo
 
-    ZAMS2 = i
+    !ZAMS2 = i
 
-    ZAMS3=maxloc(t% tr(i_logg,1:ZAMS1),dim=1)
+    !ZAMS3=maxloc(t% tr(i_logg,1:ZAMS1),dim=1)
 
     !currently we choose to use ZAMS3 definition but can also
     !incorporate the ZAMS2 definition, or even average 1,2,&3
 
-    ZAMS=ZAMS3
+    ZAMS=ZAMS1
 
     !in case no H-burning occurs, take the location of the highest 
     !central temperature
@@ -339,8 +467,8 @@ contains
     my_guess_2 = my_guess
 
     do i=my_guess, t% ntrack
-       if(t% tr(i_Yc,i) > Ymin .and. t% tr(i_logLHe,i) > LHemax)then
-          LHemax = t% tr(i_logLHe,i)
+       if(t% tr(i_Yc,i) > Ymin )then !.and. t% tr(i_logLHe,i) > LHemax
+          !LHemax = t% tr(i_logLHe,i)
           my_guess_2 = i
        endif
     enddo

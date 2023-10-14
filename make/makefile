@@ -1,7 +1,8 @@
-#check ISO_DIR is set
-ifndef ISO_DIR
-  $(error ISO_DIR enviroment variable is not set)
-endif
+ISO_DIR = /Users/poojan/iso
+
+#MESASDK_ROOT=/Applications/mesasdk
+#source $MESASDK_ROOT/bin/mesasdk_init.sh
+#export MESA_DIR='/Users/poojan/MESA/mesa-r22.05.1'
 
 #for MESA pieces, you need to have MESA_DIR environment variable set
 include $(MESA_DIR)/utils/makefile_header
@@ -98,5 +99,6 @@ BC_tables.o: $(SRC_DIR)/BC_tables.f90
 	$(FC) $(OMP) $(FFLAGS) $(INCLUDE) -c $<
 
 clean:
-	rm -f $(ISO_DIR)/$(EEP) $(ISO_DIR)/$(ISO) $(ISO_DIR)/$(BLEND) $(ISO_DIR)/$(TRK) $(ISO_DIR)/$(INTMET) $(ISO_DIR)/$(INTAGE) $(ISO_DIR)/$(CMD)
+	rm -f $(ISO_DIR)/$(EEP) $(ISO_DIR)/$(ISO) $(ISO_DIR)/$(BLEND) $(ISO_DIR)/$(TRK) $(ISO_DIR)/$(INTMET) $(ISO_DIR)/$(INTAGE) $(ISO_DIR)/$(CMD) $(ISO_DIR)/$(INTEEP) $(ISO_DIR)/$(CHA) $(ISO_DIR)/$(EEP_CMD)
+	
 	rm -f *.mod *.o

@@ -29,6 +29,7 @@ module iso_eep_support
   integer, parameter :: star_high_mass    =  4 !does not end as a WD
 
   character(len=10) :: star_label(4)=['   unknown', 'substellar', '  low-mass', ' high-mass']
+  character(len=4) :: filetype
 
   !binary file io controls
   logical :: make_bin_tracks=.true. !faster for repeated isochrone construction
@@ -65,6 +66,7 @@ module iso_eep_support
   integer :: ncol
   integer, parameter :: column_int=0
   integer, parameter :: column_dbl=1
+  integer :: iend  !columns like line num, model num etc, that won't be part of o/p
   type column
      character(len=col_width) :: name
      integer :: type, loc
@@ -89,6 +91,7 @@ module iso_eep_support
      character(len=20), allocatable :: labels(:) !(nfil) for mags
      real(sp), allocatable :: mags(:,:) !(nfil,neep)
      integer, allocatable :: eep(:)
+     character, allocatable :: model(:)
      real(dp) :: initial_mass, initial_Y, Fe_div_H, initial_Z, v_div_vcrit, alpha_div_Fe
      real(dp), allocatable :: tr(:,:), dist(:), phase(:)
      !these are used internally as an intermediate step
@@ -147,6 +150,7 @@ contains
     logical :: is_int
     ierr=0
     io=alloc_iounit(ierr)
+!print*< history_columns_list
     open(io,file=trim(history_columns_list),action='read',status='old',iostat=ierr)
     if(ierr/=0) then
        write(*,*) 'failed to open history columns list: ', trim(history_columns_list)
@@ -244,7 +248,7 @@ contains
     t% ncol = ncol
     t% neep = primary
     t% filename = trim(filename)
-    allocate(t% eep(t% neep)) 
+    allocate(t% eep(t% neep))
   end subroutine alloc_track
 
   subroutine write_track(x)
@@ -261,16 +265,15 @@ contains
        ncol = x% ncol
     endif
     have_phase = adjustr(have_phase)
-    write(io,'(a25,a8)') '# MIST version number  = ', x% version_string
-    write(io,'(a25,i8)') '# MESA revision number = ', x% MESA_revision_number
+    !write(io,'(a25,a8)') '# MIST version number  = ', x% version_string
+    !write(io,'(a25,i8)') '# MESA revision number = ', x% MESA_revision_number
 !                      123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
-    write(io,'(a88)') '# --------------------------------------------------------------------------------------'
-    write(io,'(a88)') '#  Yinit        Zinit   [Fe/H]   [a/Fe]  v/vcrit                                        '
-    write(io,'(a2,f6.4,1p1e13.5,0p3f9.2)') '# ', x% initial_Y, x% initial_Z, x% Fe_div_H, x% alpha_div_Fe, x% v_div_vcrit
-    write(io,'(a88)') '# --------------------------------------------------------------------------------------'
-    write(io,'(a1,1x,a16,4a8,2x,a10)') '#','initial_mass', 'N_pts', 'N_EEP', 'N_col', 'phase', 'type'
-    write(io,'(a1,1x,1p1e16.10,3i8,a8,2x,a10)') '#', x% initial_mass, x% ntrack, x% neep, ncol, have_phase, &
-         star_label(x% star_type)
+    !write(io,'(a88)') '# --------------------------------------------------------------------------------------'
+    !write(io,'(a88)') '#  Yinit        Zinit   [Fe/H]   [a/Fe]  v/vcrit                                        '
+    !write(io,'(a2,f6.4,1p1e13.5,0p3f9.2)') '# ', x% initial_Y, x% initial_Z, x% Fe_div_H, x% alpha_div_Fe, x% v_div_vcrit
+   ! write(io,'(a88)') '# --------------------------------------------------------------------------------------'
+    write(io,'(a1,1x,a16,4a8,2x,a10)') '#','initial_mass', 'N_pts', 'N_EEP', 'N_col', 'type'
+    write(io,'(a1,1x,1p1e16.10,3i8,2x,a10)') '#', x% initial_mass, x% ntrack, x% neep, x% ncol ,star_label(x% star_type)
     write(io,'(a8,20i8)') '# EEPs: ', x% eep
     write(io,'(a88)') '# --------------------------------------------------------------------------------------'
 
@@ -310,72 +313,45 @@ contains
     call free_iounit(io)
   end subroutine write_eep_bin
 
-
-
   subroutine read_history_file(t,ierr)
     type(track), intent(inout) :: t
     integer, intent(out) :: ierr
     character(len=8192) :: line
     character(len=file_path) :: binfile
-    integer :: i, ilo, ihi, io, j, imass, iversion
+    integer :: i, j, io, eep(primary)!,ilo, ihi,  imass, iversion
     integer, allocatable :: output(:) !ncol
     logical :: binfile_exists
+    character(len=13) :: mass_name
 
     ierr = 0
-    if(verbose)then
-       write(*,*)  '    main = ', main
-       write(*,*)  '    head = ', head
-       write(*,*)  '    xtra = ', xtra
-    endif
-
-    ! using unformatted binary files makes the process of creating
-    ! EEP files much faster. so check to see if the .bin exists and,
-    ! if it does, read it and be done. otherwise read the .data
-    ! file and write a new .bin at the end.
-    ! time goes from t=2min to t<3sec for 94 tracks. tight!
-    if(make_bin_tracks)then
-       binfile=trim(history_dir) // '/' // trim(t% filename) // '.bin'
-       inquire(file=binfile,exist=binfile_exists)
-
-       if(binfile_exists)then
-          call read_history_bin(t)
-          call distance_along_track(t)
-          return
-       endif
-    endif
-
+    eep = 0
     ! if the binfile does not exist, then we read the history files and write new
     ! .bins.  slow.
     io=alloc_iounit(ierr)
     open(unit=io,file=trim(trim(history_dir) // '/' // t% filename),status='old',action='read')
     !read first 3 lines of header
-    !currently don't use all of this info, but could...
-    imass=0
-    iversion=0
-    do j=1,3
-       read(io,'(a)') line
-       do i=1,7
-          ilo =   1 + head*(i-1) + xtra*(i-1)
-          ihi = ilo + head-1
-          if(j==2)then
-             if(adjustl(adjustr(line(ilo:ihi)))=='version_number') iversion=i
-             if(adjustl(adjustr(line(ilo:ihi)))=='initial_mass')   imass=i
-          else if(j==3)then
-             if(i==iversion) read(line(ilo:ihi),*) t% MESA_revision_number
-             if(i==imass) read(line(ilo:ihi),*) t% initial_mass
-          endif
-       enddo
-    enddo
-
-    read(io,*) !blank line
-
-    if(verbose) write(*,*) trim(t% filename), t% initial_Mass, t% MESA_revision_number
-
-    !read first two lines of main section
-    read(io,*)
+    read(io,*) mass_name,t% initial_mass
     read(io,'(a)') line
-    call dict(line,output)
+    !print*,"line",trim(line)
+    line = adjustl(line)
+    j = scan(line," ")
+    line = line(j:)
+    do i = 1,primary
+        line = adjustl(line)
+        j = scan(line," ")
+        read(line(1:j),*,iostat=ierr) eep(i)
+        if (ierr/=0) exit
+        line = line(j:)
+    end do
 
+    read(io,'(a)') line         !column names
+    !call dict(line,output)
+    !do i =1, ncol
+        !line = adjustl(line)
+        !j = scan(line," ")
+        !if(adjustl(adjustr(line(1:j)))==trim(cols(i)% name)) t% cols(i)% name = line(1:j)
+        !line = line(j:)
+    !end do
     !figure out how many data lines
     j=1
     do while(.true.)
@@ -385,30 +361,57 @@ contains
     enddo
     t% ntrack = j-1
 
-    t% ncol = ncol
+    t% ncol = size(cols)
     allocate(t% tr(t% ncol, t% ntrack),t% cols(t% ncol))
     allocate(t% eep_tr(t% ncol, primary), t% eep_dist(primary))
 
     t% cols = cols
-
     !ignore file header, already read it once
     rewind(io)
-    do i=1,6
+    do i=1,3
        read(io,*)
     enddo
-
+    allocate(t% model(t% ntrack))
     !read track data
     do j=1,t% ntrack
        read(io,'(a)',iostat=ierr) line
        if(ierr/=0) exit
-       do i=1,t% ncol
-          if(output(i)/=0)then
-             ilo =   1 + main*(output(i)-1)+xtra*(output(i)-1)
-             ihi = ilo + main-1
-             read(line(ilo:ihi),*) t% tr(i,j)
-          endif
-       enddo
+       call split(line,t% tr(:,j),t% ncol,t% model(j))
+!print*,"t",t% model(j)
     enddo
+
+    if (filetype =='SSE ') then
+    !setting up primary eeps
+        t% eep =0
+        j=1
+        do i= 1, 10
+            if (eep(i)>0)then
+                t% eep(j) = eep(i)
+                j=j+1
+            endif
+        end do
+    !        t% neep = count(eep>0)
+    !
+    !!        allocate(t% eep(t% neep))
+    !        t% eep = pack(eep,eep>0)
+        print*,"eep", eep
+        print*,"eep_interval", eep_interval
+!        print*,"t% eep", t% eep
+        if (eep(4) == 0) then
+            eep_interval(3)=176
+            eep_interval(4)=75
+            eep_interval(5)=100
+        else
+            eep_interval(3)=150
+            eep_interval(4)=25
+            eep_interval(5)=75
+        endif
+        if (eep(8) == 0) then
+            t% star_type = star_high_mass
+        else
+            t% star_type = star_low_mass
+        endif
+    endif
     close(io)
 
     call free_iounit(io)
@@ -416,16 +419,51 @@ contains
     !compute distance along track
     allocate(t% dist(t% ntrack))
     call distance_along_track(t)
-    call set_star_type_from_history(t)
+    if (filetype =='Pols') call set_star_type_from_history(t)
 
     !finally check if initial mass is correct and, if not, replace it
-    if(check_initial_mass) then
-       if(abs(t% initial_mass - t% tr(i_mass,1)) > mass_eps) t% initial_mass = t% tr(i_mass,1)
-    endif
+    !if(check_initial_mass) then
+       !if(abs(t% initial_mass - t% tr(i_mass,1)) > mass_eps) t% initial_mass = t% tr(i_mass,1)
+    !endif
 
-    if(make_bin_tracks) call write_history_bin(t)
+!    if(make_bin_tracks) call write_history_bin(t)
 
   end subroutine read_history_file
+
+
+
+!from C.Flynn's driver routine
+
+subroutine split(line,values,ncol,m)
+character(len=*) :: line
+real(dp) :: values(:)
+integer:: i,ncol, iblankpos
+character:: m
+
+!columns like line num, model num etc, that won't be part of o/p
+if (filetype =='Pols') iend =2 !for pols file
+if (filetype =='SSE ') iend =1 !for sse file
+
+do i = 1,iend
+line = adjustl(line)
+iblankpos = scan(line," ")
+line = line(iblankpos:)
+end do
+
+do i =1, ncol
+!print*,i,trim(line)
+line = adjustl(line)
+iblankpos = scan(line," ")
+if (trim(line)/= '') read(line(1:iblankpos),*) values(i)
+line = line(iblankpos:)
+!print*,values(i)
+end do
+if (filetype =='Pols') read(line,*) m
+!print*,m
+!print*, values(ncol)
+
+end subroutine split
+
 
   subroutine read_history_bin(t)
     type(track), intent(inout) :: t
@@ -833,7 +871,7 @@ contains
 
   subroutine distance_along_track(t)
     type(track), intent(inout) :: t
-    real(dp) :: tmp_dist, weight, max_center_h1
+    real(dp) :: tmp_dist, weight, max_center_h1,age1
     integer :: j
 
     if(weight_center_rho_T_by_Xc)then
@@ -851,17 +889,27 @@ contains
           if(weight_center_rho_T_by_Xc)then
              weight = max(0d0, t% tr(i_Xc,j)/max_center_h1)
           endif
-          
+
           !build up the distance between EEPs piece by piece
           tmp_dist =            Teff_scale*sqdiff(t% tr(i_logTe,j) , t% tr(i_logTe,j-1))
           tmp_dist = tmp_dist + logL_scale*sqdiff(t% tr(i_logL, j) , t% tr(i_logL, j-1))
-          tmp_dist = tmp_dist + weight * Rhoc_scale * sqdiff(t% tr(i_Rhoc, j) , t% tr(i_Rhoc, j-1))
-          tmp_dist = tmp_dist + weight * Tc_scale*  sqdiff(t% tr(i_Tc,   j) , t% tr(i_Tc,   j-1))
-          tmp_dist = tmp_dist + age_scale* sqdiff(log10(t% tr(i_age,j)) , log10(t% tr(i_age,j-1))) 
 
+          if (filetype == 'Pols') then
+            tmp_dist = tmp_dist + weight * Rhoc_scale * sqdiff(t% tr(i_Rhoc, j) , t% tr(i_Rhoc, j-1))
+            tmp_dist = tmp_dist + weight * Tc_scale*  sqdiff(t% tr(i_Tc,   j) , t% tr(i_Tc,   j-1))
+            !print*,tmp_dist
+          endif
+          age1 = t% tr(i_age,j-1)
+          if(age1 == 0.0) age1 = 1E-6
+
+          tmp_dist = tmp_dist + age_scale* sqdiff(log10(t% tr(i_age,j)) , log10(age1))
+        ! print*,tmp_dist
           t% dist(j) = t% dist(j-1) + sqrt(tmp_dist)
+            !print*,"t% dist", t% dist(j)
+        !stop
        enddo
     endif
+
   end subroutine distance_along_track
 
   elemental function sqdiff(x0,x1) result(y) !square of x, y=x*x
@@ -938,28 +986,28 @@ contains
        write(*,*) 'failed in process_history_columns'
        return
     endif
-    ncol = size(cols) 
+    ncol = size(cols)
     if(verbose) write(*,*) ' number of history columns = ', ncol
-    col_name = 'star_age'; i_age = locate_column(col_name)
-    col_name = 'star_mass'; i_mass= locate_column(col_name)
+    col_name = 'age'; i_age = locate_column(col_name)
+    col_name = 'mass'; i_mass= locate_column(col_name)
     col_name='log_LH'; i_logLH=locate_column(col_name)
     col_name='log_LHe'; i_logLHe=locate_column(col_name)
-    col_name='log_Teff'; i_logTe=locate_column(col_name)
+    col_name='log_Te'; i_logTe=locate_column(col_name)
     col_name='log_L'; i_logL=locate_column(col_name)
     col_name='log_g'; i_logg=locate_column(col_name)
-    col_name='log_center_T'; i_Tc=locate_column(col_name)
-    col_name='log_center_Rho'; i_Rhoc=locate_column(col_name)
-    col_name='center_h1'; i_Xc=locate_column(col_name)
-    col_name='center_he4'; i_Yc=locate_column(col_name)
-    col_name='center_c12'; i_Cc=locate_column(col_name)
+    col_name='log_Tc'; i_Tc=locate_column(col_name)
+    col_name='log_Dc'; i_Rhoc=locate_column(col_name)
+    col_name='cH1'; i_Xc=locate_column(col_name)
+    col_name='cHe4'; i_Yc=locate_column(col_name)
+    col_name='cC12'; i_Cc=locate_column(col_name)
     col_name='center_gamma'; i_gamma=locate_column(col_name)
-    col_name='surface_h1'; i_surfH=locate_column(col_name)
+    col_name='sH1'; i_surfH=locate_column(col_name)
     if(old_core_mass_names)then
        col_name='h1_boundary_mass'; i_he_core = locate_column(col_name)
        col_name='he4_boundary_mass'; i_co_core = locate_column(col_name)
     else
-       col_name='he_core_mass'; i_he_core = locate_column(col_name)
-       col_name='c_core_mass'; i_co_core = locate_column(col_name)
+       col_name='Mc_He'; i_he_core = locate_column(col_name)
+       col_name='Mc_CO'; i_co_core = locate_column(col_name)
     endif
     if(verbose)then
        write(*,*) ' star_age column = ', i_age
@@ -990,10 +1038,10 @@ contains
     endif
 
     !only reach center_gamma_limit if the star evolves to a WD
-    if( t% tr(i_gamma,n) > center_gamma_limit) then
-       t% star_type = star_low_mass
-       return
-    endif
+    !if( t% tr(i_gamma,n) > center_gamma_limit) then
+       !t% star_type = star_low_mass
+      ! return
+   ! endif
 
     !simple test for high-mass stars is that central C is depleted
     if(maxval(t% tr(i_Cc,:)) > 0.4d0 .and. t% tr(i_Cc,n) < center_carbon_limit)then

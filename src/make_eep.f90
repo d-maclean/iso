@@ -13,7 +13,7 @@ program make_eeps
   character(len=file_path), allocatable :: history_files(:)
   type(track), pointer :: t=>NULL(), s=>NULL()
   logical :: do_phases = .true.
-  real(dp) :: initial_Y, initial_Z, Fe_div_H, v_div_vcrit, alpha_div_Fe
+  real(dp) :: initial_Z!, initial_Y, Fe_div_H, v_div_vcrit, alpha_div_Fe
 
   namelist /eep_controls/ do_phases, center_gamma_limit, &
        center_carbon_limit, log_center_T_limit, &
@@ -29,6 +29,8 @@ program make_eeps
      stop       '   no command line argument   '
   endif
 
+!     filetype = 'Pols'
+     filetype = 'SSE '
   !read input file, set up columns, eeps, format specs
   call read_input(ierr)
   if(ierr/=0) stop 'make_eeps: failed in read_input'
@@ -37,19 +39,20 @@ program make_eeps
   do i=1,num
      call alloc_track(history_files(i),t)
      call read_history_file(t,ierr)
-     write(*,*) trim(t% filename), t% neep, t% MESA_revision_number
+     write(*,*) trim(t% filename), t% neep!, t% MESA_revision_number
      !now set header info
-     t% initial_Y = initial_Y
-     t% initial_Z = initial_Z
-     t% Fe_div_H  = Fe_div_H
-     t% alpha_div_Fe = alpha_div_Fe
-     t% v_div_vcrit = v_div_vcrit
-     t% version_string = version_string
+     !t% initial_Y = initial_Y
+     !t% initial_Z = initial_Z
+     !t% Fe_div_H  = Fe_div_H
+     !t% alpha_div_Fe = alpha_div_Fe
+     !t% v_div_vcrit = v_div_vcrit
+     !t% version_string = version_string
      if(ierr/=0) then
         write(0,*) 'make_eep: problem reading!'
         cycle
      endif
-     call primary_eep(t)
+     if (filetype == 'Pols')  call primary_eep_pols(t)
+     !for SSE eeps are set while reading files
      write(*,'(99i8)') t% eep
      if( all(t% eep == 0) ) then
         write(*,*) ' PROBLEM WITH TRACK: NO EEPS DEFINED '
@@ -70,6 +73,7 @@ contains
 
   subroutine read_input(ierr)
     integer, intent(out) :: ierr
+    character(len=818) :: line
 
     ierr=0
     io=alloc_iounit(ierr)
@@ -91,24 +95,20 @@ contains
        write(0,*) ' make_eeps: problem reading ', trim(input_file)
        return
     endif
-    read(io,*) !skip comment
-    read(io,'(a8)') version_string
-    read(io,*) !skip comment
-    read(io,*) initial_Y, initial_Z, Fe_div_H, alpha_div_Fe, v_div_vcrit
-    read(io,*) !skip comment
+    if (filetype == 'Pols') history_columns_list = "history_columns_pols.list"
+    if (filetype == 'SSE ') history_columns_list = "history_columns_sse.list"
+    read(io,*) initial_Z
     read(io,'(a)') history_dir
     read(io,'(a)') eep_dir
-    read(io,'(a)') iso_dir
-    read(io,*) !skip comment
-    read(io,'(a)') history_columns_list
-    read(io,*) !skip comment
     read(io,*) num
     allocate(history_files(num))
     do i=1,num
-       read(io,'(a)',iostat=ierr) history_files(i)
+       read(io,'(a)',iostat=ierr) line
+        history_files(i) = trim(line)
        if(ierr/=0) exit
     enddo
     close(io)
+!    print*,"history: ",history_dir, history_files
 
     !set number of secondary EEPs between each primary EEP
     call set_eep_interval(ierr)
@@ -131,6 +131,7 @@ contains
     call free_iounit(io)
     !set up columns to be used
     call setup_columns(history_columns_list,ierr)
+    
   end subroutine read_input
 
 end program make_eeps

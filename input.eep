@@ -1,15 +1,15 @@
 #format i3, i5
 9
-  1  200
-  2  150
-  3  100
-  4  150
-  5   25
-  6   75
+  1  150
+  2  100
+  3  150
+  4   25
+  5   75
+  6  100
   7  100
-  8  600
-  9  300
-
+  8  100
+  9  100
+ 10  100
 
 This file tells make_eep how many secondary EEP intervals there are
 (1st line) and how many secondary EEPs to place in each interval.
