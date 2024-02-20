@@ -38,7 +38,7 @@ program make_eeps
   do i=1,num
      call alloc_track(history_files(i),t)
      call read_history_file(t,ierr)
-     write(*,*) trim(t% filename), t% neep, t% MESA_revision_number
+     write(*,*) trim(t% filename), t% neep, t% ntrack, t% star_type
      !now set header info
      t% he_star = do_he_star
      t% initial_Y = initial_Y
@@ -61,7 +61,18 @@ program make_eeps
      else
         call alloc_track(t% filename,s)
         call secondary_eep(t,s)
-        if(do_phases) call set_track_phase(s)
+        print*, 'before GB check',s% eep
+        
+        call check_for_bgb(s)
+        print*, 'after',s% eep
+        if(do_phases) then
+            if (s% has_BGB) then
+                call set_track_phase_BGB(s)
+            else
+                call set_track_phase(s)
+            endif
+        endif
+        
         s% filename = trim(eep_dir) // '/' // trim(s% filename) // '.eep'
         call write_track(s)
         deallocate(s)
@@ -77,14 +88,6 @@ contains
     integer, intent(out) :: ierr
 
     ierr=0
-
-    open(newunit=io,file='input.nml', action='read', status='old', iostat=ierr)
-    if(ierr/=0) then
-       write(0,*) ' make_eeps: problem reading input.nml '
-       return
-    endif
-    read(io, nml=eep_controls, iostat=ierr)
-    close(io)
 
     version_string = adjustr(version_string)
 
@@ -104,6 +107,8 @@ contains
     read(io,'(a)') eep_dir
     read(io,'(a)') iso_dir
     read(io,*) !skip comment
+    read(io,'(a)') controls_file
+    read(io,*) !skip comment
     read(io,'(a)') history_columns_list
     read(io,*) !skip comment
     read(io,*) num
@@ -112,6 +117,14 @@ contains
        read(io,'(a)',iostat=ierr) history_files(i)
        if(ierr/=0) exit
     enddo
+    close(io)
+
+    open(newunit=io,file=trim(controls_file), action='read', status='old', iostat=ierr)
+    if(ierr/=0) then
+       write(0,*) ' make_eeps: problem reading input.nml '
+       return
+    endif
+    read(io, nml=eep_controls, iostat=ierr)
     close(io)
 
     !set number of secondary EEPs between each primary EEP

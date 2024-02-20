@@ -18,7 +18,7 @@ module iso_eep_support
   
   real(dp) :: mass_eps = 1.0d-6
 
-  character(len=file_path) :: history_dir, eep_dir, iso_dir, eep_input_file
+  character(len=file_path) :: history_dir, eep_dir, iso_dir, eep_input_file,controls_file
 
   !stellar types for handling primary eeps
   integer, parameter :: unknown           =  1 !for initialization only
@@ -59,7 +59,7 @@ module iso_eep_support
   real(dp) :: Tc_scale=1d0
 
   !for columns
-  integer, parameter :: max_col = 180
+  integer, parameter :: max_col = 280   ! was 180 -PA
   integer :: ncol
   integer, parameter :: column_int=0
   integer, parameter :: column_dbl=1
@@ -367,7 +367,7 @@ contains
   subroutine read_history_file(t,ierr)
     type(track), intent(inout) :: t
     integer, intent(out) :: ierr
-    character(len=8192) :: line
+    character(len=10000) :: line ! was 8192 -PA
     character(len=file_path) :: binfile
     integer :: i, ilo, ihi, io, j, imass, iversion
     integer, allocatable :: output(:) !ncol
@@ -909,6 +909,8 @@ contains
        iloop: do i=1,max_col
           ilo =   1 + main*(i-1) + xtra*(i-1)
           ihi = ilo + main-1
+          ihi = min(ihi,len(input))
+          
           if(adjustl(adjustr(input(ilo:ihi)))==trim(cols(j)% name))then
              output(j)=i
              have_col(j) = .true.

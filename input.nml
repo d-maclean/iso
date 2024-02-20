@@ -60,7 +60,7 @@ output_to_eep_dir = .false.
    do_phases = .false.
 
    !set the WDCS primary EEP if center_gamma < center_gamma_limit
-   center_gamma_limit = 19
+   center_gamma_limit = 9 ! was 19
 
    !set the CarbonBurn primary EEP if center_c12 < center_carbon_limit
    center_carbon_limit = 0.05

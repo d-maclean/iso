@@ -7,7 +7,7 @@ module eep
   use iso_eep_support
 
   implicit none
-
+integer:: RGB_loc, TAMS_loc
   logical, parameter :: eep_verbose = .false.
 
 contains
@@ -135,31 +135,88 @@ contains
     ieep=1
     inc=1
     if(t% he_star) then !only do this section if starting with a He star
-       t% EEP(ieep) = ZAHB(t,1); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = TAHB(t,1d-4,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       if(t% star_type == star_low_mass)then
-          t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-          t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-          t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
-       elseif(t% star_type == star_high_mass)then
-          t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
-       endif
+        t% EEP(ieep) = ZAHB(t,1)
+        print*, 'ZAHB',t% EEP(ieep)
+        if(check(t,ieep)) return; ieep=ieep+1
+        
+        t% EEP(ieep) = TAHB(t,1d-4,t% EEP(ieep-1)+inc)
+        print*, 'TAHB',t% EEP(ieep)
+        if(check(t,ieep)) return; ieep=ieep+1
+        
+        if(t% star_type == star_high_mass)then
+            t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
+            if (t% EEP(ieep)==0)t% EEP(ieep) = t% ntrack
+            print*, 'cBurn', t% EEP(ieep)  ! end of HG
+
+        elseif(t% star_type <= star_low_mass)then
+            t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc)
+            center_gamma_limit = 7
+
+            if (t% EEP(ieep)==0)t% EEP(ieep) = WDCS(t,t% EEP(ieep-1)+inc)
+            print*, 'TPAGB',t% EEP(ieep)
+            if(t% EEP(ieep)==t% ntrack) return; ieep=ieep+1
+
+!            t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc)
+!            ; if(check(t,ieep)) return; ieep=ieep+1]
+            ! above doesn't work for helium stars
+            ! use t.mass_conv_envelope/(t.mass-t.co_core_mass) for giants
+            
+            !center_gamma_limit = 3
+            !t% EEP(ieep) = WDCS(t,t% EEP(ieep-1)+inc); if(t% EEP(i)==t% ntrack) return; ieep=ieep+1
+            
+            center_gamma_limit = 9.0
+            t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
+            print*, 'PostAGB',t% EEP(ieep)
+        endif
     else !normal H star 
-       !t% EEP(ieep) = PreMS_Tc(t,5.0d0,1); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = PreMS_fudge(1); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = ZAMS(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = TAMS(t,3.5d-1,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = TAMS(t,1d-12,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = RGBTip(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = ZAHB(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       t% EEP(ieep) = TAHB(t,1d-4,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-       if(t% star_type == star_low_mass)then
-          t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-          t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc); if(check(t,ieep)) return; ieep=ieep+1
-          t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
-       elseif(t% star_type == star_high_mass)then
-          t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
-       endif
+        !t% EEP(ieep) = PreMS_Tc(t,5.0d0,1); if(check(t,ieep)) return; ieep=ieep+1
+        t% EEP(ieep) = PreMS_fudge(1); if(check(t,ieep)) return; ieep=ieep+1
+        t% EEP(ieep) = ZAMS(t,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'zams'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        t% EEP(ieep) = TAMS(t,3.5d-1,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'iams'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        t% EEP(ieep) = TAMS(t,1d-12,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'tams'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        t% EEP(ieep) = RGBTip(t,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'rgb_tip'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        t% EEP(ieep) = ZAHB(t,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'zahb'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        t% EEP(ieep) = TAHB(t,1d-4,t% EEP(ieep-1)+inc)
+        print*, trim(t% filename),t% EEP(ieep), 'tahb'
+        if(check(t,ieep)) return; ieep=ieep+1
+
+        if(t% star_type <= star_low_mass)then
+            t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc)
+            print*, trim(t% filename),t% EEP(ieep), 'tpagb'
+            if(check(t,ieep)) return; ieep=ieep+1
+            
+!           if (abs(t% EEP(ieep-1)-t% ntrack)<1000) force_last = .true.
+!           if (force_last) then
+!                t% EEP(ieep-1) = t% ntrack
+!                print*, 'forcing TPAGB to be the last point'
+!                force_last = .false.
+!                return
+!           endif
+            t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc)
+            print*, trim(t% filename),t% EEP(ieep), 'postagb'
+            if(check(t,ieep)) return; ieep=ieep+1
+
+            ! t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
+!            print*, trim(t% filename),t% EEP(ieep), 'wdcs'
+        elseif(t% star_type == star_high_mass)then
+            t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
+            print*, trim(t% filename),t% EEP(ieep),'cburn'
+        endif
     endif
   end subroutine primary_eep
   
@@ -324,7 +381,7 @@ contains
        write(*,*) ' my_guess = ', my_guess
        write(*,*) '   ntrack = ', t% ntrack
     endif
-    Ymin = t% tr(i_Yc, my_guess) - 1d-2 
+    Ymin = t% tr(i_Yc, my_guess) - 3d-2 !was 1d-2
     Lmax = -99d0
     Tmin = 6d0
     do i=my_guess, t% ntrack
@@ -370,7 +427,7 @@ contains
           ZAHB = i
        endif
     enddo
-    if(ZAHB==guess) ZAHB=0
+!    if(ZAHB==guess) ZAHB=0
   end function ZAHB
 
   integer function TAHB(t,Ymin,guess)
@@ -398,7 +455,7 @@ contains
     type(track), intent(in) :: t
     integer, intent(in) :: guess
     real(dp), parameter :: Ymin = 1d-6
-    real(dp), parameter :: HeShellMin = 1d-1
+    real(dp), parameter :: HeShellMin = 5d-2 !was 1d-1
     real(dp) :: Yc, HeShell
     integer :: i, my_guess
     TPAGB = 0
@@ -451,6 +508,7 @@ contains
        !has no TP-AGB
        return
     endif
+    
   end function PostAGB
 
   integer function WDCS(t,guess)
@@ -477,7 +535,7 @@ contains
     type(track), intent(in) :: t
     integer, intent(in) :: guess
     integer :: my_guess, i
-    real(dp), parameter :: limit_XY=1d-8
+    real(dp), parameter :: limit_XY=1d-2    !was 1d-8
     CarbonBurn = 0
     if(guess < 1)then
        my_guess = 1
@@ -494,4 +552,123 @@ contains
     enddo
   end function CarbonBurn
 
+ 
+    subroutine check_for_bgb(s)
+    type(track) :: s,t
+    integer :: j_bgb,j,l,k,temp_eep_interval(primary-1)
+    integer, allocatable :: temp_eep(:)
+    !check for BGB if it's RGB
+
+          if (s% ntrack>=s% eep(5)) then
+            j_bgb = BGB(s)
+            if (j_bgb>0) then
+
+                print*,trim(s% filename),' has BGB at ',j_bgb
+                s% has_BGB = .true.
+                l = s% neep+1
+                allocate(temp_eep(l))
+
+                do j = 1, l
+                    if (j<=4) then !TAMS
+                        temp_eep(j) = s% eep(j)
+                    elseif(j==5) then
+                        temp_eep(j) = 554
+                    else
+                        temp_eep(j) = s% eep(j-1)
+                    endif
+                enddo
+                print*, 'new eeps', temp_eep
+                temp_eep_interval = eep_interval
+                eep_interval(4)= 99
+                eep_interval(5)= 50
+                k = 454
+                t = s
+                deallocate(t% eep)
+                t% neep = 11
+                allocate(t% eep(t% neep))
+                t% eep = temp_eep
+                t% eep(5) = s% eep(4)+j_bgb
+                if (s% neep>5) t% eep(6) = s% eep(5)
+                s% tr(:,554) = t% tr(:,t% eep(5))
+                s% dist(554) = t% dist(t% eep(5))
+                do j = 4,5
+!                   s% eep(j) = k
+                   !interpolation on distance to fill secondary EEPs
+                   call eep_interpolate(t,j,k,s)
+                   k = k + eep_interval(j) + 1
+                enddo
+                deallocate(s% eep)
+                s% neep = l
+                allocate(s% eep(l))
+                s% eep = temp_eep
+                deallocate(temp_eep)
+                eep_interval = temp_eep_interval
+            endif
+          endif
+    end subroutine check_for_bgb
+
+
+    integer function BGB(t) result(j_bgb)
+        type(track), intent(in) :: t
+        real(dp) :: T_bgb_limit = 3.8
+
+        integer :: peak, jfinal, jini, j_diff,k
+        real(dp) :: mass,l_calc,diff
+        real(dp), allocatable ::Lum(:),Teff(:),core_mass(:)
+        real(dp), allocatable ::diff_L(:),diff_Te(:),dLdTe(:)
+
+        j_bgb = -1
+
+        jini = 454
+        jfinal = 605
+        j_diff = jfinal - jini
+        if (j_diff<=0) return
+
+        allocate(Lum(j_diff),Teff(j_diff),core_mass(j_diff))
+        allocate (diff_L(j_diff -1),diff_Te(j_diff -1),dLdTe(j_diff -1))
+
+
+        Teff = t% tr(i_logTe,jini:jfinal)
+        if (Teff(j_diff)> T_bgb_limit) return
+
+
+        mass = t% initial_mass
+        Lum =  t% tr(i_logL,jini:jfinal)
+        core_mass = t%tr(i_he_core,jini:jfinal)
+
+        diff_L = Lum(2:j_diff)-Lum(1:j_diff-1)
+        diff_Te = Teff(2:j_diff)-Teff(1:j_diff-1)
+        dLdTe = diff_L/diff_Te
+
+        peak = maxloc(dLdTe,dim = 1)
+!        print*,"peak = ",mass,peak, Teff(peak),j_diff
+
+        if(peak>=j_diff-1) return
+        if (dLdTe(peak)>0.0 .and. dLdTe(peak+1)<0.0) then
+        !checking for oscillations
+            peak = maxloc(dLdTe(:peak-1),dim = 1)     !!whatif ends are very close??
+        endif
+        if (dLdTe(peak)>0.0) then          !convective core
+            do k = peak,j_diff-1
+                if (dLdTe(k)<1E-32 .and. Teff(k)<3.8) then
+                    j_bgb = k
+!                    t% has_RGB=.true.
+                    return
+                endif
+            end do
+        elseif (mass<2.0) then            !radiative core  !TODO: -- mhook?
+            do k = 1,j_diff-1
+                l_calc = log10(2.3E+5*(core_mass(k)**6))
+                diff =  l_calc-Lum(k)
+                if (abs(diff)<0.12) then
+                    j_bgb = k
+!                    t% has_RGB=.true.
+                    return
+                endif
+            end do
+        end if
+
+        deallocate(Lum,Teff,core_mass)
+        deallocate(diff_L,diff_Te,dLdTe)
+    end function BGB
 end module eep
