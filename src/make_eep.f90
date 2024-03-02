@@ -38,6 +38,7 @@ program make_eeps
   do i=1,num
      call alloc_track(history_files(i),t)
      call read_history_file(t,ierr)
+     write(*,*) '-------------------------------------------'
      write(*,*) trim(t% filename), t% neep, t% ntrack, t% star_type
      !now set header info
      t% he_star = do_he_star
@@ -62,9 +63,9 @@ program make_eeps
         call alloc_track(t% filename,s)
         call secondary_eep(t,s)
         print*, 'before GB check',s% eep
-        
+        s% he_star = t% he_star
         call check_for_bgb(s)
-        print*, 'after',s% eep
+        if (s% has_BGB) print*, 'after GB check',s% eep
         if(do_phases) then
             if (s% has_BGB) then
                 call set_track_phase_BGB(s)

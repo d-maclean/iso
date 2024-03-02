@@ -48,7 +48,7 @@ module iso_eep_support
   ! quantities from history file that need to be identified
   integer :: i_age, i_mass, i_logLH, i_logLHe, i_logTe, i_logL
   integer :: i_logg, i_Tc, i_Rhoc, i_Xc, i_Yc, i_he_core, i_co_core
-  integer :: i_Cc, i_gamma, i_surfH
+  integer :: i_Cc, i_gamma, i_surfH, i_mcenv
 
   ! for use when constructing EEP distance
   logical :: weight_center_rho_T_by_Xc
@@ -85,6 +85,7 @@ module iso_eep_support
      logical :: merger = .false.
      logical :: write_distance = .false.
      logical :: he_star = .false.
+     logical :: has_BGB = .false.
      integer :: ncol, ntrack, neep, MESA_revision_number
      integer :: star_type = unknown
      integer :: nfil !number of filters
@@ -962,6 +963,7 @@ contains
     col_name='log_Teff'; i_logTe=locate_column(col_name,ierr)
     col_name='log_L'; i_logL=locate_column(col_name,ierr)
     col_name='log_g'; i_logg=locate_column(col_name,ierr)
+    i_Tc = -1
     col_name='log_center_T'; i_Tc=locate_column(col_name,ierr)
     col_name='log_center_Rho'; i_Rhoc=locate_column(col_name,ierr)
     col_name='center_h1'; i_Xc=locate_column(col_name,ierr)
@@ -969,6 +971,8 @@ contains
     col_name='center_c12'; i_Cc=locate_column(col_name,ierr)
     col_name='center_gamma'; i_gamma=locate_column(col_name,ierr)
     col_name='surface_h1'; i_surfH=locate_column(col_name,ierr)
+    i_mcenv = -1
+    col_name='mass_conv_envelope'; i_mcenv=locate_column(col_name,ierr)
     if(old_core_mass_names)then
        col_name='h1_boundary_mass'; i_he_core = locate_column(col_name,ierr)
        col_name='he4_boundary_mass'; i_co_core = locate_column(col_name,ierr)

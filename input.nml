@@ -87,7 +87,7 @@ output_to_eep_dir = .false.
 
    !suggested values
    age_scale = 1d0
-   Teff_scale = 2.0d0
+   Teff_scale = 0.5d0
    logL_scale = 0.125d0
 
 / !end of eep_controls

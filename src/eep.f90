@@ -130,7 +130,7 @@ contains
   subroutine primary_eep(t)
     ! sets the locations of the primary EEPs in a track read from a history data file
     type(track), intent(inout) :: t
-    integer :: ieep, inc
+    integer :: ieep, inc,maxt
     t% EEP = 0 !initialize
     ieep=1
     inc=1
@@ -150,9 +150,10 @@ contains
 
         elseif(t% star_type <= star_low_mass)then
             t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc)
-            center_gamma_limit = 7
+            center_gamma_limit = 5
 
             if (t% EEP(ieep)==0)t% EEP(ieep) = WDCS(t,t% EEP(ieep-1)+inc)
+            if (t% EEP(ieep)==0)t%EEP(ieep) = t% ntrack
             print*, 'TPAGB',t% EEP(ieep)
             if(t% EEP(ieep)==t% ntrack) return; ieep=ieep+1
 
@@ -163,41 +164,43 @@ contains
             
             !center_gamma_limit = 3
             !t% EEP(ieep) = WDCS(t,t% EEP(ieep-1)+inc); if(t% EEP(i)==t% ntrack) return; ieep=ieep+1
-            
-            center_gamma_limit = 9.0
-            t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
+!            center_gamma_limit = 9.0
+!            t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
+            maxT = maxloc(t% tr(i_logTe,t% EEP(ieep-1)+inc:),dim=1)+t% EEP(ieep-1)
+            if (t% tr(i_logTe,maxT) > t% tr(i_logTe,1)) t% EEP(ieep) = maxT
             print*, 'PostAGB',t% EEP(ieep)
         endif
     else !normal H star 
         !t% EEP(ieep) = PreMS_Tc(t,5.0d0,1); if(check(t,ieep)) return; ieep=ieep+1
         t% EEP(ieep) = PreMS_fudge(1); if(check(t,ieep)) return; ieep=ieep+1
         t% EEP(ieep) = ZAMS(t,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'zams'
+        if(t% EEP(ieep)==t% EEP(ieep-1)) t% EEP(ieep)= t% EEP(ieep)+1
+        print*, 'ZAMS', t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
         t% EEP(ieep) = TAMS(t,3.5d-1,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'iams'
+        print*,'IAMS', t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
-        t% EEP(ieep) = TAMS(t,1d-12,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'tams'
+        t% EEP(ieep) = TAMS(t,1d-4,t% EEP(ieep-1)+inc)      ! was 1d-12
+        print*, 'TAMS',t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
         t% EEP(ieep) = RGBTip(t,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'rgb_tip'
+        print*, 'RGB_TIP',t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
         t% EEP(ieep) = ZAHB(t,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'zahb'
+        print*, 'ZAHB',t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
         t% EEP(ieep) = TAHB(t,1d-4,t% EEP(ieep-1)+inc)
-        print*, trim(t% filename),t% EEP(ieep), 'tahb'
+        print*, 'TAHB',t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
 
         if(t% star_type <= star_low_mass)then
             t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc)
-            print*, trim(t% filename),t% EEP(ieep), 'tpagb'
+            print*, 'TPAGB',t% EEP(ieep)
             if(check(t,ieep)) return; ieep=ieep+1
             
 !           if (abs(t% EEP(ieep-1)-t% ntrack)<1000) force_last = .true.
@@ -208,14 +211,14 @@ contains
 !                return
 !           endif
             t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc)
-            print*, trim(t% filename),t% EEP(ieep), 'postagb'
+            print*, 'POSTAGB',t% EEP(ieep)
             if(check(t,ieep)) return; ieep=ieep+1
 
             ! t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
 !            print*, trim(t% filename),t% EEP(ieep), 'wdcs'
         elseif(t% star_type == star_high_mass)then
             t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
-            print*, trim(t% filename),t% EEP(ieep),'cburn'
+            print*, 'Cburn',t% EEP(ieep)
         endif
     endif
   end subroutine primary_eep
@@ -555,62 +558,97 @@ contains
  
     subroutine check_for_bgb(s)
     type(track) :: s,t
-    integer :: j_bgb,j,l,k,temp_eep_interval(primary-1)
+    integer :: j_bgb,j,l,k,chi,bgb_interval
+    integer :: temp_eep_interval(primary-1)
     integer, allocatable :: temp_eep(:)
+!    real(dp) :: maxc
     !check for BGB if it's RGB
-
-          if (s% ntrack>=s% eep(5)) then
-            j_bgb = BGB(s)
-            if (j_bgb>0) then
-
-                print*,trim(s% filename),' has BGB at ',j_bgb
-                s% has_BGB = .true.
-                l = s% neep+1
-                allocate(temp_eep(l))
-
-                do j = 1, l
-                    if (j<=4) then !TAMS
-                        temp_eep(j) = s% eep(j)
-                    elseif(j==5) then
-                        temp_eep(j) = 554
-                    else
-                        temp_eep(j) = s% eep(j-1)
-                    endif
-                enddo
-                print*, 'new eeps', temp_eep
-                temp_eep_interval = eep_interval
-                eep_interval(4)= 99
-                eep_interval(5)= 50
-                k = 454
-                t = s
-                deallocate(t% eep)
-                t% neep = 11
-                allocate(t% eep(t% neep))
-                t% eep = temp_eep
-                t% eep(5) = s% eep(4)+j_bgb
-                if (s% neep>5) t% eep(6) = s% eep(5)
-                s% tr(:,554) = t% tr(:,t% eep(5))
-                s% dist(554) = t% dist(t% eep(5))
-                do j = 4,5
-!                   s% eep(j) = k
-                   !interpolation on distance to fill secondary EEPs
-                   call eep_interpolate(t,j,k,s)
-                   k = k + eep_interval(j) + 1
-                enddo
-                deallocate(s% eep)
-                s% neep = l
-                allocate(s% eep(l))
-                s% eep = temp_eep
-                deallocate(temp_eep)
-                eep_interval = temp_eep_interval
+        j_bgb = -1
+        chi = 5     ! core helium ignition/ rgbtip
+        if (s% he_star) chi = 3
+        IF (s% neep >=chi) THEN !
+            if (i_mcenv>0) then
+                j_bgb = bgb_mcenv(s,s% eep(chi-1),s% eep(chi))
+            elseif (s% he_star .eqv. .false.)then
+                j_bgb = BGB(s)  ! only for h stars
             endif
-          endif
+        ENDIF
+
+        
+        if (j_bgb>0) then
+!            maxc = maxval(s% tr(i_Cc,:))-1.0d-4
+!            if (s% he_star .and. (s% tr(i_Cc,j_bgb)<=maxc)) return
+            print*,'BGB ',j_bgb, trim(s% filename)
+            j_bgb = j_bgb-s% eep(chi-1)
+            s% has_BGB = .true.
+            
+            l = s% neep+1
+            temp_eep_interval = eep_interval
+            eep_interval(chi-1)= 99
+            eep_interval(chi)= 50
+            ! don't need others, also this is temporary
+            bgb_interval = s% eep(chi-1)+eep_interval(chi-1)+1
+            allocate(temp_eep(l))
+
+            do j = 1, l
+                if (j<=chi-1) then !TAMS
+                    temp_eep(j) = s% eep(j)
+                elseif(j==chi) then
+                    temp_eep(j) = bgb_interval
+                else
+                    temp_eep(j) = s% eep(j-1)
+                endif
+            enddo
+!            print*, 'new eeps', temp_eep
+            k = s% eep(chi-1)
+            ! copy s in temp array t
+            t = s
+            deallocate(t% eep)
+            t% neep = l
+            allocate(t% eep(t% neep))
+            t% eep = temp_eep
+            t% eep(chi) = s% eep(chi-1)+j_bgb
+
+            if (s% neep>chi) t% eep(chi+1) = s% eep(chi)
+            s% tr(:,bgb_interval) = t% tr(:,t% eep(chi))
+            s% dist(bgb_interval) = t% dist(t% eep(chi))
+            do j = chi-1,chi
+!                   s% eep(j) = k
+               !interpolation on distance to fill secondary EEPs
+               call eep_interpolate(t,j,k,s)
+               k = k + eep_interval(j) + 1
+            enddo
+            deallocate(s% eep)
+            s% neep = l
+            allocate(s% eep(l))
+            s% eep = temp_eep
+            deallocate(temp_eep)
+            eep_interval = temp_eep_interval
+            
+        endif
+      
     end subroutine check_for_bgb
 
+    integer function bgb_mcenv(s,jstart,jend) result(j_bgb1)
+        type(track), intent(in) :: s
+        integer :: j, jstart,jend
+        real(dp) :: T_bgb_limit = 3.85d0
 
+        j_bgb1 = -1
+!        print*, 'teff',s% tr(i_logTe,jend)
+        if ((s% he_star.eqv. .false. ).and.s% tr(i_logTe,jend)> T_bgb_limit) return
+
+        do j = jstart,jend
+            if (s% tr(i_mcenv,j)/s% tr(i_mass,j).ge.0.12d0) then
+                j_bgb1 = j
+                exit
+            endif
+        enddo
+    end function
+                
     integer function BGB(t) result(j_bgb)
         type(track), intent(in) :: t
-        real(dp) :: T_bgb_limit = 3.8
+        real(dp) :: T_bgb_limit = 3.8d0
 
         integer :: peak, jfinal, jini, j_diff,k
         real(dp) :: mass,l_calc,diff
@@ -648,21 +686,20 @@ contains
         !checking for oscillations
             peak = maxloc(dLdTe(:peak-1),dim = 1)     !!whatif ends are very close??
         endif
+        peak = max(peak,1)
         if (dLdTe(peak)>0.0) then          !convective core
             do k = peak,j_diff-1
-                if (dLdTe(k)<1E-32 .and. Teff(k)<3.8) then
+                if (dLdTe(k)<1E-8 .and. Teff(k)<3.8) then
                     j_bgb = k
-!                    t% has_RGB=.true.
                     return
                 endif
             end do
-        elseif (mass<2.0) then            !radiative core  !TODO: -- mhook?
+        elseif (mass<2.0) then            !radiative core
             do k = 1,j_diff-1
                 l_calc = log10(2.3E+5*(core_mass(k)**6))
                 diff =  l_calc-Lum(k)
                 if (abs(diff)<0.12) then
                     j_bgb = k
-!                    t% has_RGB=.true.
                     return
                 endif
             end do

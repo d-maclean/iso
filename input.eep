@@ -22,3 +22,13 @@ XXXYYYYY
 of secondary EEPs to place in that interval.
 
 For N=10 primary EEPs there will be N-1=9 secondary intervals.
+ 1 prems
+ 2 zams
+ 3 iams
+ 3 tams
+ 4 rgbtip
+ 5 zahb
+ 6 tahb
+ 7 tpagb/cburn
+ 8 postagb
+ 9 wdcs
