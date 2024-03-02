@@ -1,0 +1,64 @@
+#version string, max 8 characters
+11701
+#initial Y, initial Z, [Fe/H], [alpha/Fe], v/vcrit (space separated)
+   9.8d-01 2.0d-02   0.00        0.00     0.0
+#data directories: 1) history files, 2) eeps, 3) isochrones
+/Users/poojan/stellar_tracks/MESA/helium/He_z02/tracks
+/Users/poojan/stellar_tracks/MESA/helium/He_z02/eeps
+data/isochrones
+#control files
+input_he.nml
+#read history_columns
+inputs/my_history_columns.list
+#specify tracks
+50
+000500_history.data
+000549_history.data
+000603_history.data
+000662_history.data
+000728_history.data
+000799_history.data
+000878_history.data
+000965_history.data
+001060_history.data
+001164_history.data
+001279_history.data
+001405_history.data
+001544_history.data
+001696_history.data
+001863_history.data
+002047_history.data
+002249_history.data
+002470_history.data
+002714_history.data
+002981_history.data
+003275_history.data
+003598_history.data
+003953_history.data
+004342_history.data
+004770_history.data
+005240_history.data
+005756_history.data
+006324_history.data
+006947_history.data
+007632_history.data
+008384_history.data
+009210_history.data
+010117_history.data
+011114_history.data
+012210_history.data
+013413_history.data
+014735_history.data
+016187_history.data
+017782_history.data
+019534_history.data
+021459_history.data
+023574_history.data
+025897_history.data
+028449_history.data
+031252_history.data
+034332_history.data
+037715_history.data
+041432_history.data
+045514_history.data
+049999_history.data

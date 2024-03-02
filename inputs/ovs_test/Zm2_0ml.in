@@ -1,0 +1,52 @@
+#version string, max 8 characters
+1.0
+#initial Y, initial Z, [Fe/H],  [alpha/Fe],   v/vcrit (space separated)
+0.00  0.0001     0.00     0.00     0.00
+#data directories: 1) history files, 2) eeps, 3) isochrones
+/hildafs/projects/phy200025p/pagrawal/mesa_11701/ML_test/history_files/zsun_m2_0ml_ovs0p33/tracks/
+/hildafs/projects/phy200025p/pagrawal/mesa_11701/ML_test/history_files/zsun_m2_0ml_ovs0p33/eeps/
+/fred/oz003/poojan/mesa/iso/data/isochrones
+#read history_columns
+my_history_columns_basic.list
+#specify tracks
+40
+00100_history.data
+00120_history.data
+00140_history.data
+00160_history.data
+00179_history.data
+00199_history.data
+00219_history.data
+00239_history.data
+00259_history.data
+00280_history.data
+00300_history.data
+00350_history.data
+00400_history.data
+00450_history.data
+00500_history.data
+00550_history.data
+00600_history.data
+00650_history.data
+00700_history.data
+00750_history.data
+00800_history.data
+00850_history.data
+00900_history.data
+01000_history.data
+01100_history.data
+01200_history.data
+01300_history.data
+01500_history.data
+01700_history.data
+01900_history.data
+02000_history.data
+02500_history.data
+03000_history.data
+03500_history.data
+04000_history.data
+04500_history.data
+05000_history.data
+05500_history.data
+06000_history.data
+06500_history.data
