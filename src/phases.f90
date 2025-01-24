@@ -138,8 +138,8 @@ contains
           phase = undefined
        end select
 
-       if(t% tr(i_logTe,i) >= 4d0 .and. t% tr(i_surfH,i) <= 3d-1 .and. &
-            t% star_type == star_high_mass) phase = Wolf_Rayet
+!       if(t% tr(i_logTe,i) >= 4d0 .and. t% tr(i_surfH,i) <= 3d-1 .and. &
+!            t% star_type == star_high_mass) phase = Wolf_Rayet
 
        t% phase(i) = phase
     enddo

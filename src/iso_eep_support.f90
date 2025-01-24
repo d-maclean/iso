@@ -8,7 +8,7 @@ module iso_eep_support
 
   logical, parameter :: verbose = .false.
   logical, parameter :: old_core_mass_names=.false.
-  integer, parameter :: col_width = 32, file_path = 256
+  integer, parameter :: col_width = 32, file_path = 256, file_line=15000
 
   !for isochrones
   integer, parameter :: age_scale_linear = 0
@@ -59,7 +59,7 @@ module iso_eep_support
   real(dp) :: Tc_scale=1d0
 
   !for columns
-  integer, parameter :: max_col = 280   ! was 180 -PA
+  integer, parameter :: max_col = 300   ! was 180 -PA
   integer :: ncol
   integer, parameter :: column_int=0
   integer, parameter :: column_dbl=1
@@ -368,9 +368,9 @@ contains
   subroutine read_history_file(t,ierr)
     type(track), intent(inout) :: t
     integer, intent(out) :: ierr
-    character(len=10000) :: line ! was 8192 -PA
+    character(len=file_line) :: line ! was 8192 -PA
     character(len=file_path) :: binfile
-    integer :: i, ilo, ihi, io, j, imass, iversion
+    integer :: i, ilo, ihi, io, j, imass, iversion,iZini,iYini
     integer, allocatable :: output(:) !ncol
     logical :: binfile_exists
 
@@ -404,25 +404,33 @@ contains
     !currently don't use all of this info, but could...
     imass=0
     iversion=0
+    iZini=0
+    iYini=0
     do j=1,3
        read(io,'(a)') line
-       do i=1,7
+       do i=1,11
           ilo =   1 + head*(i-1) + xtra*(i-1)
           ihi = ilo + head-1
           if(j==2)then
              if(adjustl(adjustr(line(ilo:ihi)))=='version_number') iversion=i
              if(adjustl(adjustr(line(ilo:ihi)))=='initial_mass')   imass=i
+             if(adjustl(adjustr(line(ilo:ihi)))=='initial_m')   imass=i
+             if(adjustl(adjustr(line(ilo:ihi)))=='initial_Z')      iZini=i
+             if(adjustl(adjustr(line(ilo:ihi)))=='initial_Y')       iYini=i
           else if(j==3)then
              if(i==iversion) read(line(ilo:ihi),*) t% MESA_revision_number
              if(i==imass) read(line(ilo:ihi),*) t% initial_mass
+             if(i==iZini) read(line(ilo:ihi),*) t% initial_Z
+             if(i==iYini) read(line(ilo:ihi),*) t% initial_Y
           endif
        enddo
     enddo
 
     read(io,*) !blank line
 
-    if(verbose) write(*,*) trim(t% filename), t% initial_Mass, t% MESA_revision_number
-
+!    if(verbose)
+    write(*,*) trim(t% filename),  t% MESA_revision_number, t% initial_mass,t% initial_Z, t% initial_Y
+ 
     !read first two lines of main section
     read(io,*)
     read(io,'(a)') line

@@ -131,11 +131,14 @@ contains
     ! sets the locations of the primary EEPs in a track read from a history data file
     type(track), intent(inout) :: t
     integer :: ieep, inc,maxt
+    logical:: force_last
     t% EEP = 0 !initialize
     ieep=1
     inc=1
+    
+    force_last = .false.
     if(t% he_star) then !only do this section if starting with a He star
-        t% EEP(ieep) = ZAHB(t,1)
+        t% EEP(ieep) = He_ZAMS(t,1)
         print*, 'ZAHB',t% EEP(ieep)
         if(check(t,ieep)) return; ieep=ieep+1
         
@@ -147,7 +150,7 @@ contains
             t% EEP(ieep) = CarbonBurn(t,t% EEP(ieep-1)+inc)
             if (t% EEP(ieep)==0)t% EEP(ieep) = t% ntrack
             print*, 'cBurn', t% EEP(ieep)  ! end of HG
-
+            force_last = .false.
         elseif(t% star_type <= star_low_mass)then
             t% EEP(ieep) = TPAGB(t,t% EEP(ieep-1)+inc)
             center_gamma_limit = 5
@@ -204,15 +207,10 @@ contains
             if(check(t,ieep)) return; ieep=ieep+1
             
 !           if (abs(t% EEP(ieep-1)-t% ntrack)<1000) force_last = .true.
-!           if (force_last) then
-!                t% EEP(ieep-1) = t% ntrack
-!                print*, 'forcing TPAGB to be the last point'
-!                force_last = .false.
-!                return
-!           endif
+!
             t% EEP(ieep) = PostAGB(t,t% EEP(ieep-1)+inc)
             print*, 'POSTAGB',t% EEP(ieep)
-            if(check(t,ieep)) return; ieep=ieep+1
+!            if(check(t,ieep)) return; ieep=ieep+1
 
             ! t% EEP(ieep) = WDCS(t, t% EEP(ieep-1)+inc)
 !            print*, trim(t% filename),t% EEP(ieep), 'wdcs'
@@ -221,6 +219,16 @@ contains
             print*, 'Cburn',t% EEP(ieep)
         endif
     endif
+    
+    if (force_last) then
+            t% EEP(ieep+1) = t% ntrack
+            print*, 'forcing last point as EEP'
+            force_last = .false.
+            return
+        endif
+    print*, 'EEPS', t% EEP
+
+
   end subroutine primary_eep
   
   logical function check(t,i)
@@ -458,7 +466,7 @@ contains
     type(track), intent(in) :: t
     integer, intent(in) :: guess
     real(dp), parameter :: Ymin = 1d-6
-    real(dp), parameter :: HeShellMin = 5d-2 !was 1d-1
+    real(dp), parameter :: HeShellMin = 1d-1    ! was 5d-2 at some point, def 1d-1
     real(dp) :: Yc, HeShell
     integer :: i, my_guess
     TPAGB = 0
@@ -555,7 +563,30 @@ contains
     enddo
   end function CarbonBurn
 
- 
+ integer function He_ZAMS(t,guess)
+    type(track), intent(in) :: t
+    integer, intent(in) :: guess
+    integer :: i, my_guess
+    real(dp) :: Ymin, Tmin, LHemax
+    He_ZAMS = 0
+    if(guess < 1 .or. guess > t% ntrack) then
+       my_guess = 1
+    elseif(guess == t% ntrack)then
+       return
+    else
+       my_guess = guess
+    endif
+    Ymin = t% tr(i_Yc, my_guess) - 1d-3
+
+    do i=my_guess, t% ntrack
+       if(t% tr(i_Yc,i) > Ymin)then
+          He_ZAMS = i
+       endif
+    enddo
+    
+  end function He_ZAMS
+  
+  
     subroutine check_for_bgb(s)
     type(track) :: s,t
     integer :: j_bgb,j,l,k,chi,bgb_interval
