@@ -1,0 +1,20 @@
+#version string, max 8 characters
+<<j>>
+#initial Y, initial Z, [Fe/H], [alpha/Fe], v/vcrit (space separated)
+   <<Y>> <<Z>>   0.00        0.00     0.00
+#data directories: 1) history files, 2) eeps, 3) isochrones
+<<TRACKS>>
+<<EEPS>>
+<<ISOCHRONES>>
+#read history_columns
+my_history_columns_basic.list
+#specify tracks
+<<NTRACKS>>
+<<TRACK_FILES>>
+#specify isochrones
+isochrones_example.txt
+min_max
+log10
+51
+5.0
+10.0
